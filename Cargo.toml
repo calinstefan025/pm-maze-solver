@@ -3,6 +3,11 @@ name = "proiect"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "proiect"
+test = false
+bench = false
+
 [dependencies]
 embassy-stm32 = { version = "0.4.0", features = ["defmt", "stm32u545re", "unstable-pac", "memory-x", "time-driver-tim4", "exti", "chrono"] }
 
