@@ -15,9 +15,9 @@ async fn main(_spawner: Spawner) {
     let ir_stanga = Input::new(p.PA0, Pull::None);
     let ir_dreapta = Input::new(p.PA1, Pull::None);
 
-    // pini pentru senzorul ultrasonic (fata - D9 si D10)
+    // pini pentru senzorul ultrasonic
     let mut trig = Output::new(p.PC7, Level::Low, Speed::VeryHigh);
-    let echo = Input::new(p.PB6, Pull::None);
+    let echo = Input::new(p.PC8, Pull::None);
 
     info!("Pornire sistem senzori: IR x2 + Ultrasonic...");
 
