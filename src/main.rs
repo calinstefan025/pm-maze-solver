@@ -3,91 +3,65 @@
 
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_stm32::gpio::{Input, Level, Output, Pull, Speed};
-use embassy_time::{Instant, Timer};
+use embassy_stm32::gpio::{Level, Output, Speed};
+use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
 
-    // pini pentru senzorii IR (laterale - A0 si A1)
-    let ir_stanga = Input::new(p.PA0, Pull::None);
-    let ir_dreapta = Input::new(p.PA1, Pull::None);
+    // Configurare Motor Stanga (conectat la OUT1/OUT2)
+    // ENA - Control viteza
+    let mut _ena = Output::new(p.PB3, Level::High, Speed::Low);
+    // IN1 si IN2 - Control directie
+    let mut in1 = Output::new(p.PB5, Level::Low, Speed::Low);
+    let mut in2 = Output::new(p.PB4, Level::Low, Speed::Low);
 
-    // pini pentru senzorul ultrasonic
-    let mut trig = Output::new(p.PC7, Level::Low, Speed::VeryHigh);
-    let echo = Input::new(p.PC8, Pull::None);
+    // Configurare Motor Dreapta (conectat la OUT3/OUT4)
+    // ENB - Control viteza
+    let mut _enb = Output::new(p.PB10, Level::High, Speed::Low);
+    // IN3 si IN4 - Control directie
+    let mut in3 = Output::new(p.PA7, Level::Low, Speed::Low);
+    let mut in4 = Output::new(p.PA6, Level::Low, Speed::Low);
 
-    info!("Pornire sistem senzori: IR x2 + Ultrasonic...");
+    info!("Test motoare initiat");
 
     loop {
-        // 1. citire status senzori IR
-        let stare_stanga = if ir_stanga.is_low() {
-            "OBSTACOL"
-        } else {
-            "Liber"
-        };
-        let stare_dreapta = if ir_dreapta.is_low() {
-            "OBSTACOL"
-        } else {
-            "Liber"
-        };
+        // Test Mers Inainte
+        info!("Mers inainte");
+        in1.set_high();
+        in2.set_low();
 
-        // 2. emitere puls ultrasonic
-        trig.set_high();
-        Timer::after_micros(10).await;
-        trig.set_low();
+        in3.set_high();
+        in4.set_low();
+        Timer::after_millis(2000).await;
 
-        // 3. asteptam startul ecoului cu o plasa de siguranta (TIMEOUT)
-        let wait_start = Instant::now();
-        let mut echo_primit = true;
+        // Pauza
+        info!("Stop");
+        in1.set_low();
+        in2.set_low();
 
-        while echo.is_low() {
-            // daca asteapta mai mult de 50 de milisecunde, e clar o problema fizica
-            if wait_start.elapsed().as_micros() > 50000 {
-                echo_primit = false;
-                break;
-            }
-        }
+        in3.set_low();
+        in4.set_low();
+        Timer::after_millis(1000).await;
 
-        // daca firul ECHO nu a raspuns, dam eroare dar nu blocam programul
-        if !echo_primit {
-            info!(
-                "Stanga: {} | Dreapta: {} | Fata: EROARE CITIRE (Verifica firul ECHO din D10!)",
-                stare_stanga, stare_dreapta
-            );
-            Timer::after_millis(500).await;
-            continue; // sare peste restul buclei si o ia de la capat
-        }
+        // Test Mers Inapoi
+        info!("Mers inapoi");
+        in1.set_low();
+        in2.set_high();
 
-        // 4. asteptam intoarcerea ecoului cu o limita de siguranta
-        let start_time = Instant::now();
-        while echo.is_high() {
-            if start_time.elapsed().as_micros() > 30000 {
-                break;
-            }
-        }
-        let end_time = Instant::now();
+        in3.set_low();
+        in4.set_high();
+        Timer::after_millis(2000).await;
 
-        // 5. calculare timp si distanta
-        let duration = end_time.duration_since(start_time).as_micros();
+        // Pauza
+        info!("Stop");
+        in1.set_low();
+        in2.set_low();
 
-        // 6. afisarea tuturor senzorilor simultan in consola
-        if duration < 30000 {
-            let distance_cm = duration / 58;
-            info!(
-                "Stanga: {} | Dreapta: {} | Fata: {} cm",
-                stare_stanga, stare_dreapta, distance_cm
-            );
-        } else {
-            info!(
-                "Stanga: {} | Dreapta: {} | Fata: Liber (fara obstacol)",
-                stare_stanga, stare_dreapta
-            );
-        }
-
-        // pauza pentru lizibilitate in terminal
-        Timer::after_millis(500).await;
+        in3.set_low();
+        in4.set_low();
+        Timer::after_millis(1000).await;
     }
 }
